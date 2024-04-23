@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    image: adrewkirts/crafted-by_backend
     ports:
       - "8000:80"
 
@@ -10,10 +10,3 @@ services:
 networks:
   common_network:
     external: true
-
-#    command: >
-#      sh -c "
-#             /usr/bin/supervisord -n"
-
-
-  # composer update --no-interaction &&

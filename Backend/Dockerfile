@@ -6,36 +6,22 @@ RUN apt-get update && apt-get install -y \
     supervisor \
     unzip \
     zip \
-    git
-
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install PHP extensions required by Laravel
-RUN docker-php-ext-install pdo_mysql
+    git \
+ && docker-php-ext-install pdo_mysql \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 
 # Installing composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Create Supervisor log folders
-RUN mkdir -p /var/log/nginx
-RUN mkdir -p /var/log/php-fpm
-RUN mkdir -p /var/www/html
-RUN mkdir -p /run/php
-
-# Permissions
-RUN chown -R www-data:www-data /var/www /var/log/nginx /var/log/php-fpm /run/php
-RUN chmod -R 755 /var/www/html/
+WORKDIR /var/www/html
 
 # Copy source code of the Laravel application
-COPY php_code /var/www/html
+COPY backend_code /var/www/html
 
-# TODO git clone from repo and copy env file from local
-
-# Permissions for Laravel storage and cache
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
-
-WORKDIR /var/www/html
+RUN mkdir -p /var/log/nginx /var/log/php-fpm /run/php \
+ && chown -R www-data:www-data /var/www /var/log/nginx /var/log/php-fpm /run/php /var/www/html/storage /var/www/html/bootstrap/cache \
+ && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # RUN composer install --no-interaction
 RUN composer install --no-interaction
