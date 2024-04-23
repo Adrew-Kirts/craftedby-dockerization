@@ -22,13 +22,21 @@ services:
     networks:
       - common_network
 
-  app:
+  backend:
     image: adrewkirts/crafted-by_backend
+    restart: always
+    container_name: craftedby-backend
     ports:
       - "8000:80"
-
     networks:
       - common_network
+
+  frontend:
+    image: adrewkirts/crafted-by_frontend
+    restart: always
+    container_name: craftedby-frontend
+    ports:
+      - "8081:80"
 
 networks:
   common_network:

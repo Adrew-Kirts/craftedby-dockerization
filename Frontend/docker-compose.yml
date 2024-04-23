@@ -1,0 +1,6 @@
+services:
+  app:
+    image: adrewkirts/crafted-by_frontend
+    container_name: craftedby-dockerization-frontend
+    ports:
+      - "8081:80"
