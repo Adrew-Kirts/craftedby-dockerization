@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:80"
+
+    networks:
+      - common_network
+
+networks:
+  common_network:
+    external: true
+
+#    command: >
+#      sh -c "
+#             /usr/bin/supervisord -n"
+
+
+  # composer update --no-interaction &&
