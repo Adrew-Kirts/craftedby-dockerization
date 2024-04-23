@@ -29,7 +29,7 @@ RUN chmod -R 755 /var/www/html/
 # Copy source code of the Laravel application
 COPY php_code /var/www/html
 
-# TODO git clone from repo and copy env file
+# TODO git clone from repo and copy env file from local
 
 # Permissions for Laravel storage and cache
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
