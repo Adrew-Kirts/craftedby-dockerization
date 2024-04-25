@@ -15,6 +15,9 @@ FROM nginx:stable-alpine as production-stage
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 # Copy the nginx configuration file
 COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf
+# Script to replace env variables
+COPY ./substitute_env_var.sh /docker-entrypoint.d/substitute_env_var.sh
+RUN chmod +x /docker-entrypoint.d/substitute_env_var.sh
 # Expose the port 80
 EXPOSE 80
 # Start Nginx to serve the application

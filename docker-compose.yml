@@ -15,7 +15,7 @@ services:
       - common_network
 
   adminer:
-    image: adminer
+    image: adminer:latest
     restart: always
     ports:
       - "8080:8080"
@@ -23,7 +23,7 @@ services:
       - common_network
 
   backend:
-    image: adrewkirts/crafted-by_backend
+    image: adrewkirts/crafted-by_backend:latest
     restart: always
     container_name: craftedby-backend
     ports:
@@ -32,7 +32,7 @@ services:
       - common_network
 
   frontend:
-    image: adrewkirts/crafted-by_frontend
+    image: adrewkirts/crafted-by_frontend:latest
     restart: always
     container_name: craftedby-frontend
     ports:
