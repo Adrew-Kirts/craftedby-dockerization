@@ -280,6 +280,30 @@ networks:
 
 #### Environment variables for containerized Vue app 
 
+It will build the application using the environment variable VITE_API_ENDPOINT. However, this environment variable 
+is not "overridable" at runtime. Therefore, even if you pass an environment variable in your docker-compose file, 
+it will have no effect. There is a trick that involves replacing the variable at runtime of the 
+application using a bash entrypoint script.
+
+### Script necessary to change variables:
+
+```
+#!/bin/sh
+ROOT_DIR=/usr/share/nginx/html/assets
+# Replace env vars in files served by NGINX
+for file in $ROOT_DIR/*.js;
+
+do
+sed -i "s|VITE_API_ENDPOINT_PLACEHOLDER|${VITE_API_ENDPOINT}|g" $file
+sed -i "s|VITE_IMAGE_BASE_URL_PLACEHOLDER|${VITE_IMAGE_BASE_URL}|g" $file
+sed -i "s|VITE_STRIPE_KEY_PLACEHOLDER|${VITE_STRIPE_KEY}|g" $file
+sed -i "s|VITE_STRIPE_SECRET_PLACEHOLDER|${VITE_STRIPE_SECRET}|g" $file
+echo "Processing $file"
+done
+# Let container execution proceed
+exec "$@"
+```
+
 Before:
 ```
 VITE_API_ENDPOINT="http://localhost:8000/api"
@@ -362,8 +386,8 @@ services:
     environment:
       - VITE_API_ENDPOINT=https://api.fabriquepar.com/api
       - VITE_IMAGE_BASE_URL=https://api.fabriquepar.com
-      - VITE_STRIPE_KEY=pk_test_PZ5P8UpDWL0CqulY6YJjRzGo00vQtn1Ff3
-      - VITE_STRIPE_SECRET=sk_test_sgFQbF0KnQt7Me5J852syFSJ00GklPEL7C
+      - VITE_STRIPE_KEY=SECRET!
+      - VITE_STRIPE_SECRET=SECRET!
 
 networks:
   common_network:
