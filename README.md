@@ -125,7 +125,6 @@ fabriquepar.com.	300	IN	A	163.172.177.241
 ### Usage of Traefik
 
 
-
 ### How to setup
 
 docker-compose.yml to launch latest Traefik image and configure secure redirection 
@@ -300,11 +299,22 @@ VITE_STRIPE_SECRET=VITE_STRIPE_SECRET_PLACEHOLDER
 ```
 
 
-# Into production
+# Manual deployment
 
-## Docker compose files 
+### Steps to manually deploy database, frontend and backend app:
 
-### MariaDB
+### Structure 
+
+- Login to server 
+- Create following folders: `database`, `frontend`, `backend`, `traefik`
+- Pull necessary images from Docker repo:
+- `docker image pull adrewkirts/crafted-by_frontend:latest`
+- `docker image pull adrewkirts/crafted-by_backend:latest`
+- Create a `docker-compose.yml` in each created folder and copy the following content:
+
+### Docker compose files 
+
+#### Database
 ```
 services:
 
@@ -320,13 +330,18 @@ services:
       - "3306:3306"
     networks:
       - common_network
+    volumes:
+      - mariadb_data:/var/lib/mysql
 
 networks:
   common_network:
     external: true
+
+volumes:
+  mariadb_data:
 ```
 
-### Frontend
+#### Frontend
 ```
 services:
   frontend:
@@ -344,13 +359,18 @@ services:
       - "8081:80"
     networks:
       - common_network
+    environment:
+      - VITE_API_ENDPOINT=https://api.fabriquepar.com/api
+      - VITE_IMAGE_BASE_URL=https://api.fabriquepar.com
+      - VITE_STRIPE_KEY=pk_test_PZ5P8UpDWL0CqulY6YJjRzGo00vQtn1Ff3
+      - VITE_STRIPE_SECRET=sk_test_sgFQbF0KnQt7Me5J852syFSJ00GklPEL7C
 
 networks:
   common_network:
     external: true
 ```
 
-### Backend 
+#### Backend 
 ```
 services:
   backend:
@@ -374,7 +394,7 @@ networks:
     external: true
 ```
 
-### Traefic
+#### Traefik
 ```
 services:
   traefik:
@@ -402,20 +422,14 @@ services:
       - "traefik.docker.network=common_network"
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
-      - "traefik.http.routers.dashboard.middlewares=test-auth@docker"
       - "traefik.http.middlewares.test-auth.basicauth.users=user:$$2y$$05$$oCRG5Ho1bS6JXS1ZzY9BI.wRIRbbrY1WhsQIwLLHrZfFKaqaCuaGS"
-
-#      - "traefik.http.routers.api.rule=Host(`api.fabriquepar.com`)"
-#      - "traefik.http.routers.api.entrypoints=https"
-#      - "traefik.http.routers.api.tls=true"
-#      - "traefik.http.routers.api.tls.certresolver=le"
-#      - "traefik.http.routers.api.service=api@internal"
 
       - "traefik.http.routers.dashboard.rule=Host(`dashboard.fabriquepar.com`)"
       - "traefik.http.routers.dashboard.entrypoints=https"
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=le"
       - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=test-auth@docker"
 
     networks:
       - common_network
@@ -428,5 +442,116 @@ volumes:
   traefik-public-certificates:
 ```
 
+### Launching containers 
+
+In each folder use the following command:
+
+`docker compose up --build -d`
+
+To launch the containers and check if all are running by using:
+
+`docker ps`
+
+The website is now accessible at `https://fabriquepar.com`
 
 
+# CI / CD
+
+## General structure
+
+### How many branches will be used in the GitHub repository?
+There will be two main branches: dev for ongoing development and prod for stable releases that go into production. 
+Additionally, feature branches can be created for specific features or fixes that can be merged into dev once they are 
+complete.
+
+### Which branch will contain the development code?
+The dev branch will contain the development code. It's where all the integration of new features, experiments, 
+and testing pre-production happens.
+
+### Which branch will contain the final code?
+The prod branch will contain the final, stable code that is ready for production deployment.
+
+### How to manage application versions?
+Versions will be managed by tagging the releases in the prod branch. Each time there's a merge from dev to prod and the 
+state is stable enough for production, a new Git tag (e.g., v1.1.0) will be created. This helps in tracking versions 
+historically and assists in rollback scenarios if needed.
+
+### Which branch will be used for building Docker images?
+The prod branch will be used for building Docker images, ensuring that only production-ready code is deployed in 
+your Docker containers.
+
+### Which branch will be used for deploying my application?
+The prod branch will be used for deploying the application.
+
+### When should I build my Docker images?
+Build your Docker images whenever there are changes merged into the prod branch. This process will be automated using 
+GitHub Actions that triggers a build and pushes the Docker image to a registry every time changes 
+are pushed to prod.
+
+### How is the relationship between frontend and backend versions managed?
+To keep frontend and backend versions aligned, the same versioning scheme is used and both parts will be updated 
+simultaneously where necessary. If you release a new version of the backend, ensure the frontend is compatible and vice 
+versa. Automated tests will be used to verify that the frontend and backend work together before merging changes into prod.
+
+
+### GHA Workflow
+
+#### How to push to live server
+
+Steps to follow:
+
+- Commit and push new feature to dev branch
+- Update version in version.txt
+- Commit and push to production branch ("prod")
+- GHA will run when version is updated
+
+![](https://i.ibb.co/B3Rs2Tk/gha-workflow-drawio.png)
+
+```
+
+name: CraftedBy Frontend server deploy
+
+on:
+  push:
+    branches: [ "prod" ]
+    paths:
+      - 'version.txt'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      name: Checkout code
+    
+    - name: Read Version
+      id: version
+      run: echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
+
+    - name: Build Docker image
+      run: docker build . -t adrewkirts/crafted-by_frontend:latest -t adrewkirts/crafted-by_frontend:${{ env.VERSION }}
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Push Docker Image
+      run: docker push adrewkirts/crafted-by_frontend:${{ env.VERSION }}
+
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v0.1.4
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: |
+          cd dockerfiles/frontend/
+          sed -i "s|adrewkirts/crafted-by_frontend:.*|adrewkirts/crafted-by_frontend:${{ env.VERSION }}|g" docker-compose.yml
+          sudo docker pull adrewkirts/crafted-by_frontend:${{ env.VERSION }}
+          sudo docker compose up -d
+
+```
