@@ -4,13 +4,13 @@ Dockerization of CraftedBy DB / Frontend / BackEnd
 ## Production server configuration
 
 ### Login to server 
-ssh ezra@163.172.177.241
+ssh username@163.172.177.241
 
 Change one time usable password 
 
 ### Add public key to server
 
-ssh-copy-id -i  ~/.ssh/ezra.pub ezra@163.172.177.241
+ssh-copy-id -i  ~/.ssh/username.pub username@163.172.177.241
 
 #### optional: remove password authentification
 
